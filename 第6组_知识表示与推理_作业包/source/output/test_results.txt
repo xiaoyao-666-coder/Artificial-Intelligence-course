@@ -1,0 +1,16 @@
+test_alert_sets (test_project.ProjectTests.test_alert_sets) ... ok
+test_control (test_project.ProjectTests.test_control) ... ok
+test_cycle_algorithms_agree (test_project.ProjectTests.test_cycle_algorithms_agree) ... ok
+test_depth_cutoff_not_person (test_project.ProjectTests.test_depth_cutoff_not_person) ... ok
+test_equity_is_not_voting_control (test_project.ProjectTests.test_equity_is_not_voting_control) ... ok
+test_fixed_point (test_project.ProjectTests.test_fixed_point) ... ok
+test_frame_override (test_project.ProjectTests.test_frame_override) ... ok
+test_half_not_control (test_project.ProjectTests.test_half_not_control) ... ok
+test_no_false_control (test_project.ProjectTests.test_no_false_control) ... ok
+test_sql_graph_same_on_dag (test_project.ProjectTests.test_sql_graph_same_on_dag) ... ok
+test_unification_repeated_variable (test_project.ProjectTests.test_unification_repeated_variable) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.064s
+
+OK
