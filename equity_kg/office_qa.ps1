@@ -1,4 +1,4 @@
-param([switch]$Template)
+﻿param([switch]$Template)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $voice = New-Object -ComObject SAPI.SpVoice

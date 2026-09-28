@@ -40,4 +40,20 @@ python benchmark.py
 
 ## 文档和视频重建
 
-`build_deliverables.py` 用python-docx与python-pptx生成文件；按当前环境使用Codex bundled Python运行。`office_qa.ps1` 通过本机Word和PowerPoint导出PDF及页面图，`make_audio.ps1` 使用Windows Huihui语音，`build_videos.py` 使用FFmpeg合成视频。重建视频需修改脚本中的本机Python路径（当前为D:/python/python.exe）。QA文件位于 `qa/`，不作为作业正文提交。运行 `build_deliverables.py` 会重写报告中的个人信息占位，请先备份自行填写的版本。
+`build_deliverables.py` 用python-docx与python-pptx生成文件；按当前环境使用Codex bundled Python运行。`office_qa.ps1` 通过本机Word和PowerPoint导出PDF及页面图，`make_audio.ps1` 使用Windows Huihui语音，`build_videos.py` 使用FFmpeg合成视频。视频脚本使用当前 Python 解释器；FFmpeg 优先取 PATH，缺失时使用 imageio-ffmpeg 提供的可执行文件。QA文件位于 `qa/`，不作为作业正文提交。运行 `build_deliverables.py` 会重写报告中的个人信息占位，请先备份自行填写的版本。
+
+## 修订交付与验证边界
+
+保留原报告、PPT和视频；`课堂报告_修订版.docx` 是报告修订副本，明确区分历史基准结果与本次功能复测。修订报告已通过隔离提取的 LibreOffice 25.8.7 转换，使用标准 render_docx.py 加 Windows 文件 URI 适配器渲染为5页图片，并逐页检查通过。此路径避开了本机 Word 导出挂起问题，不修改系统 Office 安装或默认关联。填写个人信息后仍应复查分页。
+
+`deliverables/system_live_recording.mp4` 替代旧分页回放作为推荐系统演示：录制专用窗口内真实 `main.py --step` 进程的输出，自动发送回车推进，并展示新生成的结果图谱；无配音。原 `系统运行demo.mp4` 保留作参考。使用 `python record_live_demo.py` 可重录（Windows 图形会话，录制期间不要遮挡窗口）。
+
+`package_submission.py` 现在使用当前解释器，验证两段选定视频的完整解码、PPT视频音轨和三分钟限制，并重跑单元测试。采用明确文件清单，排除 `.venv`、QA 和依赖目录，生成带 SHA256 清单的独立“修订预览包”，不覆盖原提交ZIP。运行：
+
+```powershell
+python -m pip install -r requirements-deliverables.txt
+python package_submission.py
+```
+
+现有9页PPT已导出并逐页检查，本轮尚未编辑（所需编辑运行库不可用）；现有配音汇报视频继续与该PPT配套。预览包内注明本轮PPT未修改及个人信息待填写；报告、两段视频、单元测试与压缩包完整性已完成对应验证。打包脚本绑定已检查报告的SHA256，若报告改变会要求重新检查，避免沿用过期排版结论。
+公开同步范围：代码、合成示例和复现说明；本地修订报告、系统实录、修订预览ZIP及QA记录不随本次代码提交上传。打包脚本依赖这些本地产物，纯代码克隆后不能直接生成相同预览包。

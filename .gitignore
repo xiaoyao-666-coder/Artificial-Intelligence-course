@@ -11,3 +11,5 @@ Thumbs.db
 .DS_Store
 # Office renders, temporary narration and video segments
 equity_kg/qa/
+
+qa/

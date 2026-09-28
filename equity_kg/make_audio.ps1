@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $texts = Get-Content -Raw -Encoding utf8 (Join-Path $PSScriptRoot 'qa/narration.json') | ConvertFrom-Json
 $voice = New-Object -ComObject SAPI.SpVoice
 $voice.Voice = $voice.GetVoices() | Where-Object { $_.GetDescription() -like '*Huihui*' } | Select-Object -First 1

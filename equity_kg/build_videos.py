@@ -1,12 +1,24 @@
 """将真实程序输出分页回放，并把PowerPoint导出的页面与讲稿配音合成视频。"""
 from pathlib import Path
-import subprocess, wave, re, json, sys
+import subprocess, wave, re, json, sys, shutil
+
+def find_ffmpeg():
+    executable = shutil.which("ffmpeg")
+    if executable:
+        return executable
+    try:
+        from imageio_ffmpeg import get_ffmpeg_exe
+        return get_ffmpeg_exe()
+    except ImportError as error:
+        raise RuntimeError("Install FFmpeg or imageio-ffmpeg before rebuilding videos") from error
+
+FFMPEG = find_ffmpeg()
 from PIL import Image, ImageDraw, ImageFont
 ROOT=Path(__file__).parent; QA=ROOT/'qa'; OUT=ROOT/'deliverables'
 FONT='C:/Windows/Fonts/msyh.ttc'; BOLD='C:/Windows/Fonts/msyhbd.ttc'
 def run(args): subprocess.run(args,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
 def video(image,audio,duration,target):
-    args=['ffmpeg','-y','-loop','1','-i',str(image)]
+    args=[FFMPEG,'-y','-loop','1','-i',str(image)]
     if audio:args+=['-i',str(audio)]
     args+=['-t',str(duration),'-vf','scale=1600:900:force_original_aspect_ratio=decrease,pad=1600:900:(ow-iw)/2:(oh-ih)/2,format=yuv420p','-r','12','-c:v','libx264','-preset','fast','-crf','24']
     if audio:args+=['-af','atempo=1.08,apad','-c:a','aac','-b:a','128k']
@@ -14,7 +26,7 @@ def video(image,audio,duration,target):
 def combine(parts,target):
     listing=QA/(target.stem+'-concat.txt')
     listing.write_text('\n'.join("file '"+p.as_posix()+"'" for p in parts),encoding='utf-8')
-    run(['ffmpeg','-y','-f','concat','-safe','0','-i',str(listing),'-c','copy','-movflags','+faststart',str(target)])
+    run([FFMPEG,'-y','-f','concat','-safe','0','-i',str(listing),'-c','copy','-movflags','+faststart',str(target)])
 
 slides=sorted((QA/'slides').glob('*.PNG'),key=lambda p:int(re.search(r'\d+',p.stem).group()))
 if not slides:slides=sorted((QA/'slides').glob('*.png'),key=lambda p:int(re.search(r'\d+',p.stem).group()))
@@ -34,7 +46,7 @@ if '--talk-only' in sys.argv:
 
 # Capture a fresh process execution. The movie is explicitly a readable replay,
 # not claimed to be an operating-system screen recording.
-proc=subprocess.run(['D:/python/python.exe','-X','utf8','-u',str(ROOT/'main.py')],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',check=True)
+proc=subprocess.run([sys.executable,'-X','utf8','-u',str(ROOT/'main.py')],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',check=True)
 (ROOT/'output/video_demo_run.txt').write_text(proc.stdout,encoding='utf-8')
 chunks=re.split(r'={20,}\n',proc.stdout)
 blocks=[]

@@ -1,37 +1,107 @@
+"""Validate and create a revision bundle without overwriting the original submission."""
 from pathlib import Path
-import zipfile, json, subprocess
-ROOT=Path(__file__).parent
-OUT=ROOT/'deliverables'
-qa={}
-for file in OUT.glob('*.mp4'):
-    info=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration:stream=codec_name,codec_type,width,height','-of','json',str(file)],text=True))
-    qa[file.name]=info
-    if file.name.startswith('PPT'): assert float(info['format']['duration'])<180
-    subprocess.run(['ffmpeg','-v','error','-i',str(file),'-f','null','-'],check=True)
-test=subprocess.run(['D:/python/python.exe','-X','utf8','-m','unittest','test_project','-v'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
-(ROOT/'output/test_results.txt').write_text(test.stdout+test.stderr,encoding='utf-8')
-assert test.returncode==0
-(ROOT/'qa/final_validation.json').write_text(json.dumps(qa,ensure_ascii=False,indent=2),encoding='utf-8')
-readme='''提交材料说明
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import zipfile
 
-1. 课堂报告.docx：5页，按老师模板十部分完成；第6组，姓名、学号、分工保留占位。
-2. 课堂汇报.pptx：9页，可编辑，演讲者备注中有讲稿。
-3. PPT汇报视频.mp4：带中文合成配音，符合3分钟内要求；已按背景、问题、案例、方法和验证重写。
-4. 系统运行demo.mp4：1分32秒，真实程序输出分页回放及结果图谱，无配音。
-5. 汇报讲稿.md：可自行修改并重录。
-6. source/：代码、数据、运行说明、实测数据与完整输出日志。
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / 'deliverables'
+QA = ROOT / 'qa' / 'revision'
+EXCLUDED = {'.venv', 'venv', 'qa', 'deliverables', '__pycache__', '.git', 'node_modules'}
+EXTENSIONS = {'.py', '.ps1', '.md', '.txt', '.csv', '.json', '.html', '.png'}
 
-请先填写个人信息。
-系统demo为程序输出可视化回放，不是桌面操作录屏；如需本人实录，可运行python main.py --step。
+
+def ffmpeg_path():
+    found = shutil.which('ffmpeg')
+    if found:
+        return found
+    from imageio_ffmpeg import get_ffmpeg_exe
+    return get_ffmpeg_exe()
+
+
+def inspect_video(path):
+    ffmpeg = ffmpeg_path()
+    probe = subprocess.run([ffmpeg, '-hide_banner', '-i', str(path)], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+    text = probe.stderr
+    match = re.search(r'Duration: (\d+):(\d+):(\d+\.\d+)', text)
+    if not match or 'Video:' not in text:
+        raise RuntimeError(f'Cannot read video metadata: {path.name}')
+    h, m, s = map(float, match.groups())
+    info = {'seconds': h * 3600 + m * 60 + s, 'audio': 'Audio:' in text, 'video': True}
+    decoded = subprocess.run([ffmpeg, '-v', 'error', '-xerror', '-i', str(path), '-f', 'null', '-'], capture_output=True, text=True, timeout=240)
+    if decoded.returncode or decoded.stderr.strip():
+        raise RuntimeError(f'Video decode failed: {path.name}: {decoded.stderr}')
+    info['full_decode_passed'] = True
+    return info
+
+
+def source_files():
+    for directory, folders, files in os.walk(ROOT, followlinks=False):
+        folders[:] = sorted(name for name in folders if name not in EXCLUDED and not (Path(directory) / name).is_symlink())
+        for name in sorted(files):
+            p = Path(directory) / name
+            rel = p.relative_to(ROOT)
+            if not p.is_symlink() and p.suffix in EXTENSIONS and p.name != 'kg_demo.png':
+                yield p, (Path('source') / rel).as_posix()
+
+
+def main():
+    QA.mkdir(parents=True, exist_ok=True)
+    qa = {name: inspect_video(OUT / name) for name in ('PPT汇报视频.mp4', 'system_live_recording.mp4')}
+    if not (0 < qa['PPT汇报视频.mp4']['seconds'] < 180 and qa['PPT汇报视频.mp4']['audio']):
+        raise RuntimeError('PPT video must have audio and be under three minutes')
+    test = subprocess.run([sys.executable, '-X', 'utf8', '-m', 'unittest', 'test_project', '-v'], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', timeout=120)
+    (QA / 'package-tests.txt').write_text(test.stdout + test.stderr, encoding='utf-8')
+    if test.returncode:
+        raise RuntimeError('Tests failed; no package created')
+    if hashlib.sha256((OUT / '课堂报告_修订版.docx').read_bytes()).hexdigest() != '691f6c07214a2847c5116d65e6d520e4eb0cb3d951855a26ae36253baf540396':
+        raise RuntimeError('Report changed after visual QA; re-render and inspect before packaging')
+    qa['report_visual_qa'] = 'PASSED: 5 pages rendered using canonical render_docx.py with Windows URI adapter; all pages visually inspected'
+    qa['slides'] = 'Existing nine-slide deck retained; exported slides visually inspected; editing runtime unavailable'
+    (QA / 'final_validation.json').write_text(json.dumps(qa, ensure_ascii=False, indent=2), encoding='utf-8')
+    notes = '''修订预览包说明（个人信息待填写；PPT保留已检查的现有版本）
+
+课堂报告_修订版.docx：保留模板十部分；区分历史性能实验与本次功能测试。已通过隔离的LibreOffice与标准渲染脚本输出5页校验图，并逐页检查，未发现文字截断、图文重叠。
+课堂汇报.pptx：保留已有9页可编辑版本，已检查导出的9张页面；本轮未修改PPT，所需编辑运行库不可用。
+PPT汇报视频.mp4：已有中文合成配音版，约167秒，未超过3分钟；已完整解码验证。
+系统运行实录.mp4：约72秒，本次真实运行main.py --step并录制专用窗口；自动发送回车推进，无配音，末尾展示本次生成的图谱。不是原来的输出分页回放。
+汇报讲稿.md：现有PPT配套讲稿。
+source/：代码和复现资料，不含虚拟环境、QA目录或依赖缓存。
+
+提交前仍需：填写姓名、学号、分工；填写后复查分页；PPT如继续修改，需要同步重录配音视频。
+数据全部为教学合成数据，风险标签不构成现实风控或法律结论。性能数值为仓库原基准，不是本次机器的新测量。
 '''
-(OUT/'提交说明.txt').write_text(readme,encoding='utf-8-sig')
-dest=ROOT.parent/'第6组_知识表示与推理_作业包.zip'
-with zipfile.ZipFile(dest,'w',zipfile.ZIP_DEFLATED) as z:
-    for p in OUT.iterdir():
-        if p.is_file():z.write(p,p.name)
-    for p in ROOT.rglob('*'):
-        rel=p.relative_to(ROOT)
-        if not p.is_file() or any(x in rel.parts for x in ('qa','deliverables','__pycache__')):continue
-        if p.suffix in ('.py','.ps1','.md','.txt','.csv','.json','.html','.png') and p.name!='kg_demo.png':z.write(p,str(Path('source')/rel))
-with zipfile.ZipFile(dest) as z:assert z.testzip() is None
-print(dest, dest.stat().st_size)
+    entries = [(OUT / '课堂报告_修订版.docx', '课堂报告_修订版.docx'), (OUT / '课堂汇报.pptx', '课堂汇报.pptx'), (OUT / 'PPT汇报视频.mp4', 'PPT汇报视频.mp4'), (OUT / 'system_live_recording.mp4', '系统运行实录.mp4'), (OUT / '汇报讲稿.md', '汇报讲稿.md')]
+    entries += list(source_files())
+    manifest = {name: hashlib.sha256(path.read_bytes()).hexdigest() for path, name in entries}
+    dest = ROOT.parent / '第6组_知识表示与推理_修订预览包.zip'
+    temporary = dest.with_suffix('.zip.tmp')
+    try:
+        with zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DEFLATED) as z:
+            for path, name in entries:
+                z.write(path, name)
+            z.writestr('提交前必读.txt', notes.encode('utf-8-sig'))
+            z.writestr('SHA256.json', json.dumps(manifest, ensure_ascii=False, indent=2))
+        with zipfile.ZipFile(temporary) as z:
+            if z.testzip() is not None:
+                raise RuntimeError('ZIP integrity failure')
+            for name, digest in manifest.items():
+                if hashlib.sha256(z.read(name)).hexdigest() != digest:
+                    raise RuntimeError(f'Hash mismatch: {name}')
+            if any(any(part in EXCLUDED for part in Path(name).parts) for name in z.namelist()):
+                raise RuntimeError('Excluded directory in archive')
+        temporary.replace(dest)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    print(json.dumps(qa, ensure_ascii=False, indent=2))
+    print(f'Preview bundle: {dest} ({dest.stat().st_size:,} bytes)')
+
+
+if __name__ == '__main__':
+    main()
