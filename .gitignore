@@ -14,8 +14,5 @@ equity_kg/qa/
 
 qa/
 
-# Local revised coursework and preview bundle
-equity_kg/deliverables/*_修订版.*
-equity_kg/deliverables/system_live_recording.mp4
-第6组_知识表示与推理_修订预览包.zip
+# Temporary archive during packaging
 第6组_知识表示与推理_修订预览包.zip.tmp
