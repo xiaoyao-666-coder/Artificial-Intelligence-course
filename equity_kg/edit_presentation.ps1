@@ -49,6 +49,9 @@ try {
         $body = @($slide.NotesPage.Shapes | Where-Object { $_.Type -eq 14 -and $_.PlaceholderFormat.Type -eq 2 })
         if ($body.Count -ne 1) { throw ('Missing notes body on slide '+$entry.slide) }
         $body[0].TextFrame.TextRange.Text = $entry.narration+"`r`r[Sources]`r"+($entry.sources -join "`r")+"`r[/Sources]"
+        if ($entry.notes_extra) {
+            $body[0].TextFrame.TextRange.Text += "`r`r"+($entry.notes_extra -replace "`n", "`r")
+        }
     }
     $deck.SaveAs($target, 24)
     $deck.Export($slidesDir, 'PNG', 1600, 900)
