@@ -55,5 +55,20 @@ python -m pip install -r requirements-deliverables.txt
 python package_submission.py
 ```
 
-现有9页PPT已导出并逐页检查，本轮尚未编辑（所需编辑运行库不可用）；现有配音汇报视频继续与该PPT配套。预览包内注明本轮PPT未修改及个人信息待填写；报告、两段视频、单元测试与压缩包完整性已完成对应验证。打包脚本绑定已检查报告的SHA256，若报告改变会要求重新检查，避免沿用过期排版结论。
+修订预览包现在选用 `课堂汇报_修订版.pptx`、`汇报讲稿_修订版.md` 和 `PPT汇报视频_修订版.mp4`，替换包内原PPT及其配音。修订副本沿用原稿9页结构和字体，补充规则编号与来源备注，明确区分控制关系、经济持股、原基准性能数据和功能复测，保留原文件供对照。
+
+新增 `edit_presentation.ps1` 通过本机PowerPoint精确替换既有文本并保存修订副本、逐页PNG和演讲者备注；`make_presentation_audio.ps1` 用Windows Huihui生成对应配音；`build_revision_video.py` 用FFmpeg逐页合成带音轨的视频。编辑时保留原文本框的自动适应设置，因此文字变化可能改变文本框高度；校验限定为已编辑文本框，位置和宽度仍须一致，最终页面需人工确认无碰撞或截断。脚本保留原字体和字号，并显式固定中文字体以防Office主题替换。
+
+该修订路径依赖本机PowerPoint、Windows SAPI和FFmpeg，以及本地 `qa/ppt-revision/content.json` 与审核记录；不需要重新生成报告或运行旧版全量生成脚本。默认执行顺序如下：
+
+```powershell
+.\edit_presentation.ps1 -ContentPath .\qa\ppt-revision\content.json
+.\make_presentation_audio.ps1 -ContentPath .\qa\ppt-revision\content.json
+python build_revision_video.py
+# 逐页人工检查导出的PNG后，再执行本地结构及视频对应校验：
+python qa/ppt-revision/verify_final.py
+python package_submission.py
+```
+
+打包前检查9页结构、备注来源、逐页视频画面、讲稿与内容计划的SHA256关联，以及两段视频完整解码、汇报视频音轨和三分钟限制；同时运行11项功能测试并核对ZIP内各文件摘要。报告仍绑定已检查版本的SHA256，内容变化后必须重新渲染检查。验证不包含真人口述、异机字体兼容性或真实业务准确率；填写姓名、学号和分工后须复查分页，改动PPT或讲稿后须重建相应配音、视频和审核记录。
 公开同步范围：代码、合成示例和复现说明；本地修订报告、系统实录、修订预览ZIP及QA记录不随本次代码提交上传。打包脚本依赖这些本地产物，纯代码克隆后不能直接生成相同预览包。

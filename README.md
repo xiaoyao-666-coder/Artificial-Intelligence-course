@@ -27,7 +27,7 @@ python -m unittest test_project -v
 python benchmark.py
 ```
 
-`equity_kg/deliverables/` 保存修订后的交付成果；`第6组_知识表示与推理_作业包/` 为压缩包的展开副本。根目录另保留课程参考PPT、报告模板与作业要求图片。临时渲染、音频片段及Python缓存不纳入版本控制。
+上方下载链接保留原公开版本。本地修订预览包改用修订报告、9页修订PPT、配套讲稿与汇报视频，以及真实系统窗口实录；生成与验证流程见 [修订交付说明](equity_kg/README.md#修订交付与验证边界)。修订成品和QA记录仅保留本地，不随代码同步。`equity_kg/deliverables/` 保存本地交付成果；`第6组_知识表示与推理_作业包/` 为原作业压缩包的展开副本。根目录另保留课程参考PPT、报告模板与作业要求图片。临时渲染、音频片段及Python缓存不纳入版本控制。
 
 重建文档时，先运行 `build_deliverables.py`，再运行 `revise_ppt.py` 应用补充业务背景的PPT版本；Office导出、配音与视频生成依赖本地Windows环境，详见项目说明。
 
