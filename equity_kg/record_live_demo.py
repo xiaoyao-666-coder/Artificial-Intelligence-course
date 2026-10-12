@@ -15,7 +15,7 @@ class Demo:
  def __init__(self):
   self.root=tk.Tk();self.root.tk.call('tk','scaling',1.333333);self.root.title(TITLE);self.root.geometry('1280x720+20+20');self.root.configure(bg='#101c2c');self.root.attributes('-topmost',True)
   tk.Label(self.root,text='企业股权知识表示与风险推理｜实际程序运行',bg='#101c2c',fg='#76decd',font=('Microsoft YaHei',21,'bold')).pack(pady=(16,4))
-  self.status=tk.StringVar(value='独立 Python 进程 · 自动分步操作 · 虚构教学数据')
+  self.status=tk.StringVar(value='独立 Python 进程 · 自动分步操作')
   tk.Label(self.root,textvariable=self.status,bg='#101c2c',fg='#a7b5ca',font=('Microsoft YaHei',12)).pack(pady=4)
   self.text=tk.Text(self.root,bg='#101c2c',fg='#e4ebf4',font=('Microsoft YaHei',13),wrap='word',borderwidth=0,padx=24,pady=12)
   self.text.pack(fill='both',expand=True)

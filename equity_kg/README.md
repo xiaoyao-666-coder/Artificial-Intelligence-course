@@ -2,9 +2,17 @@
 
 ## 交付文件
 
-`deliverables/` 包含课堂报告（按所附模板十部分填写）、9页可编辑PPT、中文合成配音的PPT汇报视频、系统运行demo视频及汇报讲稿。原稿保留姓名、学号和分工占位；推荐使用已填写五位组员信息、标明组长并通过验证的修订副本。修订报告、PPT及完整预览包随仓库同步，不对组员信息脱敏。
+2026-10-12 同步最新版：报告为 [课堂报告.docx](deliverables/课堂报告.docx)，PPT为 [企业股权知识表示与风险推理.pptx](deliverables/企业股权知识表示与风险推理.pptx)（15页），配套 [讲解视频](deliverables/企业股权知识表示与风险推理.mp4) 为151.30秒，使用本人音色合成配音并附中文字幕。[讲稿](deliverables/企业股权知识表示与风险推理_本人音色讲解_讲稿.md)、同名MP3和SRT一并提供。系统演示推荐下文的72.27秒字幕版实录。
 
-系统demo是一次真实Python进程输出的逐页回放，并展示实际生成的图谱，不是操作系统桌面录屏；完整运行日志见 `output/video_demo_run.txt`。PPT视频带合成中文配音，demo以程序文字为主。
+`企业股权知识表示与风险推理_暖色增强版.pdf`、`暖色增强版_预览.png` 和 `汇报讲稿_暖色增强版.md` 对应早期14页版本；9页修订PPT及其视频也是历史材料，均不与当前15页成品混用。
+
+`build_enriched_ppt.py` 和 `render_enriched_ppt.ps1` 用于重建早期14页暖色增强版；前者需要 `python-pptx`，后者需要本机PowerPoint。QA产物保存在 `qa/ppt-enriched/`，性能图读取历史 `output/benchmark.json`。这组脚本不重建当前15页PPT或其本人音色配音；后者直接提供已制作成品，声音参考样本和模型不上传。
+
+`deliverables/` 同时保留最新版和历史材料。当前报告已填写五位组员信息、组长与分工，沿用课程模板十部分结构。已发布成品保留完整组员信息。
+
+早期 `系统运行demo.mp4` 是真实Python进程输出的逐页回放；`system_live_recording*.mp4` 则是后续实际程序窗口实录，二者应区分。完整运行日志见 `output/video_demo_run.txt`。
+
+最新版完整交付包使用 `python package_current_submission.py` 生成，包含本目录代码、合成数据、结果及全部交付成品，并附逐文件SHA256清单；排除QA、依赖、声音参考样本、模型和缓存。根目录旧“修订预览包”对应历史9页版本，不随本次更新。
 
 ## 本地运行
 
@@ -44,11 +52,13 @@ python benchmark.py
 
 ## 修订交付与验证边界
 
-保留原报告、PPT和视频；`课堂报告_修订版.docx` 是报告修订副本，明确区分历史基准结果与本次功能复测。修订报告已通过隔离提取的 LibreOffice 25.8.7 转换，使用标准 render_docx.py 加 Windows 文件 URI 适配器渲染为5页图片，并逐页检查通过。此路径避开了本机 Word 导出挂起问题，不修改系统 Office 安装或默认关联。填写个人信息后仍应复查分页。
+以下记录说明历史9页版本的制作和验证流程。其中 `课堂报告_修订版.docx` 是旧文件名，当前报告已更新并整理为 `课堂报告.docx`；旧5页审核不代表当前报告的分页。原PPT、视频和预览ZIP保留供对照，旧打包脚本需要对应历史成品与本地QA记录。
 
 `deliverables/system_live_recording.mp4` 替代旧分页回放作为推荐系统演示：录制专用窗口内真实 `main.py --step` 进程的输出，自动发送回车推进，并展示新生成的结果图谱；无配音。原 `系统运行demo.mp4` 保留作参考。使用 `python record_live_demo.py` 可重录（Windows 图形会话，录制期间不要遮挡窗口）。
 
-`package_submission.py` 现在使用当前解释器，验证两段选定视频的完整解码、PPT视频音轨和三分钟限制，并重跑单元测试。采用明确文件清单，排除 `.venv`、QA 和依赖目录，生成带 SHA256 清单的独立“修订预览包”，不覆盖原提交ZIP。运行：
+2026-10-12 新增 `deliverables/system_live_recording_字幕版.mp4` 和同名 SRT：基于上述实录重新编辑，移除顶部的“虚构教学数据”字样，按实际运行步骤加入21条中文字幕。字幕已烧录在独立底栏，不遮挡程序输出；视频保持72.27秒、15帧/秒，画布为1600×900，无配音，原实录保留。使用已安装 Pillow 的 Python 运行 `caption_live_recording.py` 可重建，要求 PATH 中有 FFmpeg 和 ffprobe；该脚本只处理现有视频，不重新运行业务程序。
+
+历史脚本 `package_submission.py` 使用当前解释器，验证旧版选定视频的完整解码、PPT视频音轨和三分钟限制，并重跑单元测试。它依赖已归档的旧报告与本地QA记录，当前成品打包请用 `package_current_submission.py`。历史制作命令如下：
 
 ```powershell
 python -m pip install -r requirements-deliverables.txt
